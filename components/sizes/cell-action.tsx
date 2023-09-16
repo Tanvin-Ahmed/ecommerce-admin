@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { BillboardColumn } from "./columns";
+import { SizeColumn } from "./columns";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +15,7 @@ import axios from "axios";
 import AlertModal from "../modals/alert-modal";
 
 interface CellActionPropsType {
-  data: BillboardColumn;
+  data: SizeColumn;
 }
 
 const CellAction: React.FC<CellActionPropsType> = ({ data }) => {
@@ -28,23 +28,21 @@ const CellAction: React.FC<CellActionPropsType> = ({ data }) => {
   const onCopy = () => {
     navigator.clipboard.writeText(data.id);
 
-    toast.success("Billboard Id copied to the clipboard");
+    toast.success("Size Id copied to the clipboard");
   };
 
   const onUpdate = () => {
-    router.push(`/${params.storeId}/billboards/${data.id}`);
+    router.push(`/${params.storeId}/sizes/${data.id}`);
   };
 
   const onDelete = async () => {
     try {
       setLoading(true);
-      await axios.delete(`/api/${params.storeId}/billboards/${data.id}`);
+      await axios.delete(`/api/${params.storeId}/sizes/${data.id}`);
       router.refresh();
-      toast.success("Billboard deleted successfully");
+      toast.success("Size deleted successfully");
     } catch (error) {
-      toast.error(
-        "Make sure you remove all categories using this billboard first."
-      );
+      toast.error("Make sure you remove all products using this size first.");
     } finally {
       setLoading(false);
       setOpen(false);
