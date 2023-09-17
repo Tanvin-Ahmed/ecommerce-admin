@@ -1,4 +1,4 @@
-import BillboardForm from "@/components/forms/billboard-form";
+import BillboardForm from "@/components/billboard/billboard-form";
 import prismaDB from "@/lib/prismadb";
 
 const BillboardPage = async ({
