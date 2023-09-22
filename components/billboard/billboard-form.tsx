@@ -7,7 +7,7 @@ import { Trash } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useReducer } from "react";
+import { useState } from "react";
 import {
   Form,
   FormControl,
@@ -21,48 +21,32 @@ import toast from "react-hot-toast";
 import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 import AlertModal from "../modals/alert-modal";
-import useOrigin from "@/hooks/use-origin";
 import ImageUpload from "../ui/image-upload";
+
+const formSchema = z.object({
+  label: z.string().min(1),
+  imageUrl: z.string().min(1),
+});
+
+type BillboardFormValues = z.infer<typeof formSchema>;
 
 interface BillboardFormProps {
   initialData: Billboard | null;
 }
 
-interface StoreInterface {
-  open: boolean;
-  loading: boolean;
-}
-
-type ActionType =
-  | { type: "TOGGLE_OPEN"; payload: boolean }
-  | { type: "TOGGLE_LOADING"; payload: boolean };
-
-const reducer = (state: StoreInterface, action: ActionType): StoreInterface => {
-  switch (action.type) {
-    case "TOGGLE_OPEN":
-      return { ...state, open: action.payload };
-    case "TOGGLE_LOADING":
-      return { ...state, loading: action.payload };
-    default:
-      return state;
-  }
-};
-
-const formSchema = z.object({
-  label: z.string().min(1, {
-    message: "Label is required",
-  }),
-  imageUrl: z.string().min(1, {
-    message: "Image url is required",
-  }),
-});
-
-type BillboardFormValues = z.infer<typeof formSchema>;
-
-const CategoryForm: React.FC<BillboardFormProps> = ({ initialData }) => {
+const BillboardForm: React.FC<BillboardFormProps> = ({ initialData }) => {
   const params = useParams();
   const router = useRouter();
-  const origin = useOrigin();
+
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const title = initialData ? "Edit billboard" : "Create billboard";
+  const description = initialData ? "Edit a billboard." : "Add a new billboard";
+  const toastMessage = initialData
+    ? "Billboard updated."
+    : "Billboard created.";
+  const action = initialData ? "Save changes" : "Create";
 
   const form = useForm<BillboardFormValues>({
     resolver: zodResolver(formSchema),
@@ -71,23 +55,6 @@ const CategoryForm: React.FC<BillboardFormProps> = ({ initialData }) => {
       imageUrl: "",
     },
   });
-
-  const [state, dispatch] = useReducer(reducer, {
-    open: false,
-    loading: false,
-  });
-
-  const setLoading = (toggle: boolean) => {
-    dispatch({ type: "TOGGLE_LOADING", payload: toggle });
-  };
-  const setOpen = (toggle: boolean) => {
-    dispatch({ type: "TOGGLE_OPEN", payload: toggle });
-  };
-
-  const title = initialData ? "Edit billboard" : "Create billboard";
-  const description = initialData ? "Edit a billboard" : "Add a new billboard";
-  const toastMessage = initialData ? "Billboard updated" : "Billboard created";
-  const action = initialData ? "Save changes" : "Create";
 
   const onSubmit = async (data: BillboardFormValues) => {
     try {
@@ -103,8 +70,8 @@ const CategoryForm: React.FC<BillboardFormProps> = ({ initialData }) => {
       router.refresh();
       router.push(`/${params.storeId}/billboards`);
       toast.success(toastMessage);
-    } catch (error) {
-      toast.error("something went wrong");
+    } catch (error: any) {
+      toast.error("Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -118,10 +85,10 @@ const CategoryForm: React.FC<BillboardFormProps> = ({ initialData }) => {
       );
       router.refresh();
       router.push(`/${params.storeId}/billboards`);
-      toast.success("Billboard deleted successfully");
-    } catch (error) {
+      toast.success("Billboard deleted.");
+    } catch (error: any) {
       toast.error(
-        "Make sure you remove all categories using this billboard first."
+        "Make sure you removed all categories using this billboard first."
       );
     } finally {
       setLoading(false);
@@ -132,18 +99,18 @@ const CategoryForm: React.FC<BillboardFormProps> = ({ initialData }) => {
   return (
     <>
       <AlertModal
-        loading={state.loading}
-        isOpen={state.open}
+        isOpen={open}
         onClose={() => setOpen(false)}
         onConfirm={onDelete}
+        loading={loading}
       />
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <Heading title={title} description={description} />
         {initialData && (
           <Button
-            variant={"destructive"}
-            size={"sm"}
-            disabled={state.loading}
+            disabled={loading}
+            variant="destructive"
+            size="sm"
             onClick={() => setOpen(true)}
           >
             <Trash className="h-4 w-4" />
@@ -165,7 +132,7 @@ const CategoryForm: React.FC<BillboardFormProps> = ({ initialData }) => {
                 <FormControl>
                   <ImageUpload
                     value={field.value ? [field.value] : []}
-                    disabled={state.loading}
+                    disabled={loading}
                     onChange={(url) => field.onChange(url)}
                     onRemove={() => field.onChange("")}
                   />
@@ -174,7 +141,7 @@ const CategoryForm: React.FC<BillboardFormProps> = ({ initialData }) => {
               </FormItem>
             )}
           />
-          <div className="grid grid-cols-3 gap-8">
+          <div className="md:grid md:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-8">
             <FormField
               control={form.control}
               name="label"
@@ -183,7 +150,7 @@ const CategoryForm: React.FC<BillboardFormProps> = ({ initialData }) => {
                   <FormLabel>Label</FormLabel>
                   <FormControl>
                     <Input
-                      disabled={state.loading}
+                      disabled={loading}
                       placeholder="Billboard label"
                       {...field}
                     />
@@ -193,14 +160,13 @@ const CategoryForm: React.FC<BillboardFormProps> = ({ initialData }) => {
               )}
             />
           </div>
-          <Button className="ml-auto" type="submit" disabled={state.loading}>
+          <Button disabled={loading} className="ml-auto" type="submit">
             {action}
           </Button>
         </form>
       </Form>
-      <Separator />
     </>
   );
 };
 
-export default CategoryForm;
+export default BillboardForm;
