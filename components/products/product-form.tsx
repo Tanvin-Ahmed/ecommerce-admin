@@ -7,7 +7,7 @@ import { Trash } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useReducer } from "react";
+import { useState } from "react";
 import {
   Form,
   FormControl,
@@ -32,41 +32,8 @@ import {
 } from "../ui/select";
 import { Checkbox } from "../ui/checkbox";
 
-interface ProductFormProps {
-  initialData:
-    | (Product & {
-        images: Image[];
-      })
-    | null;
-  categories: Category[];
-  colors: Color[];
-  sizes: Size[];
-}
-
-interface StoreInterface {
-  open: boolean;
-  loading: boolean;
-}
-
-type ActionType =
-  | { type: "TOGGLE_OPEN"; payload: boolean }
-  | { type: "TOGGLE_LOADING"; payload: boolean };
-
-const reducer = (state: StoreInterface, action: ActionType): StoreInterface => {
-  switch (action.type) {
-    case "TOGGLE_OPEN":
-      return { ...state, open: action.payload };
-    case "TOGGLE_LOADING":
-      return { ...state, loading: action.payload };
-    default:
-      return state;
-  }
-};
-
 const formSchema = z.object({
-  name: z.string().min(1, {
-    message: "Name is required",
-  }),
+  name: z.string().min(1),
   images: z.object({ url: z.string() }).array(),
   price: z.coerce.number().min(1),
   categoryId: z.string().min(1),
@@ -78,50 +45,54 @@ const formSchema = z.object({
 
 type ProductFormValues = z.infer<typeof formSchema>;
 
-const CategoryForm: React.FC<ProductFormProps> = ({
+interface ProductFormProps {
+  initialData:
+    | (Product & {
+        images: Image[];
+      })
+    | null;
+  categories: Category[];
+  colors: Color[];
+  sizes: Size[];
+}
+
+const ProductForm: React.FC<ProductFormProps> = ({
   initialData,
   categories,
-  colors,
   sizes,
+  colors,
 }) => {
   const params = useParams();
   const router = useRouter();
 
-  const form = useForm<ProductFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: initialData
-      ? {
-          ...initialData,
-          price: parseFloat(String(initialData?.price)),
-        }
-      : {
-          name: "",
-          images: [],
-          price: 0,
-          categoryId: "",
-          sizeId: "",
-          colorId: "",
-          isFeatured: false,
-          isArchived: false,
-        },
-  });
-
-  const [state, dispatch] = useReducer(reducer, {
-    open: false,
-    loading: false,
-  });
-
-  const setLoading = (toggle: boolean) => {
-    dispatch({ type: "TOGGLE_LOADING", payload: toggle });
-  };
-  const setOpen = (toggle: boolean) => {
-    dispatch({ type: "TOGGLE_OPEN", payload: toggle });
-  };
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const title = initialData ? "Edit product" : "Create product";
-  const description = initialData ? "Edit a product" : "Add a new product";
-  const toastMessage = initialData ? "Product updated" : "Product created";
+  const description = initialData ? "Edit a product." : "Add a new product";
+  const toastMessage = initialData ? "Product updated." : "Product created.";
   const action = initialData ? "Save changes" : "Create";
+
+  const defaultValues = initialData
+    ? {
+        ...initialData,
+        price: parseFloat(String(initialData?.price)),
+      }
+    : {
+        name: "",
+        images: [],
+        price: 0,
+        categoryId: "",
+        colorId: "",
+        sizeId: "",
+        isFeatured: false,
+        isArchived: false,
+      };
+
+  const form = useForm<ProductFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues,
+  });
 
   const onSubmit = async (data: ProductFormValues) => {
     try {
@@ -137,8 +108,8 @@ const CategoryForm: React.FC<ProductFormProps> = ({
       router.refresh();
       router.push(`/${params.storeId}/products`);
       toast.success(toastMessage);
-    } catch (error) {
-      toast.error("something went wrong");
+    } catch (error: any) {
+      toast.error("Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -147,11 +118,11 @@ const CategoryForm: React.FC<ProductFormProps> = ({
   const onDelete = async () => {
     try {
       setLoading(true);
-      await axios.delete(`/api/${params.storeId}/products/${params.storeId}`);
+      await axios.delete(`/api/${params.storeId}/products/${params.productId}`);
       router.refresh();
       router.push(`/${params.storeId}/products`);
-      toast.success("Product deleted successfully");
-    } catch (error) {
+      toast.success("Product deleted.");
+    } catch (error: any) {
       toast.error("Something went wrong.");
     } finally {
       setLoading(false);
@@ -162,18 +133,18 @@ const CategoryForm: React.FC<ProductFormProps> = ({
   return (
     <>
       <AlertModal
-        loading={state.loading}
-        isOpen={state.open}
+        isOpen={open}
         onClose={() => setOpen(false)}
         onConfirm={onDelete}
+        loading={loading}
       />
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <Heading title={title} description={description} />
         {initialData && (
           <Button
-            variant={"destructive"}
-            size={"sm"}
-            disabled={state.loading}
+            disabled={loading}
+            variant="destructive"
+            size="sm"
             onClick={() => setOpen(true)}
           >
             <Trash className="h-4 w-4" />
@@ -191,17 +162,17 @@ const CategoryForm: React.FC<ProductFormProps> = ({
             name="images"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Upload images</FormLabel>
+                <FormLabel>Images</FormLabel>
                 <FormControl>
                   <ImageUpload
-                    value={field.value.map((img) => img.url)}
-                    disabled={state.loading}
+                    value={field.value.map((image) => image.url)}
+                    disabled={loading}
                     onChange={(url) =>
                       field.onChange([...field.value, { url }])
                     }
                     onRemove={(url) =>
                       field.onChange([
-                        ...field.value.map((current) => current.url !== url),
+                        ...field.value.filter((current) => current.url !== url),
                       ])
                     }
                   />
@@ -210,16 +181,16 @@ const CategoryForm: React.FC<ProductFormProps> = ({
               </FormItem>
             )}
           />
-          <div className="grid grid-cols-3 gap-8">
+          <div className="md:grid md:grid-cols-3 gap-8">
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Label</FormLabel>
+                  <FormLabel>Name</FormLabel>
                   <FormControl>
                     <Input
-                      disabled={state.loading}
+                      disabled={loading}
                       placeholder="Product name"
                       {...field}
                     />
@@ -237,7 +208,7 @@ const CategoryForm: React.FC<ProductFormProps> = ({
                   <FormControl>
                     <Input
                       type="number"
-                      disabled={state.loading}
+                      disabled={loading}
                       placeholder="9.99"
                       {...field}
                     />
@@ -253,7 +224,7 @@ const CategoryForm: React.FC<ProductFormProps> = ({
                 <FormItem>
                   <FormLabel>Category</FormLabel>
                   <Select
-                    disabled={state.loading}
+                    disabled={loading}
                     onValueChange={field.onChange}
                     value={field.value}
                     defaultValue={field.value}
@@ -267,9 +238,9 @@ const CategoryForm: React.FC<ProductFormProps> = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {categories.map((item) => (
-                        <SelectItem key={item.id} value={item.id}>
-                          {item.name}
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -285,7 +256,7 @@ const CategoryForm: React.FC<ProductFormProps> = ({
                 <FormItem>
                   <FormLabel>Size</FormLabel>
                   <Select
-                    disabled={state.loading}
+                    disabled={loading}
                     onValueChange={field.onChange}
                     value={field.value}
                     defaultValue={field.value}
@@ -299,9 +270,9 @@ const CategoryForm: React.FC<ProductFormProps> = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {sizes.map((item) => (
-                        <SelectItem key={item.id} value={item.id}>
-                          {item.name}
+                      {sizes.map((size) => (
+                        <SelectItem key={size.id} value={size.id}>
+                          {size.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -317,7 +288,7 @@ const CategoryForm: React.FC<ProductFormProps> = ({
                 <FormItem>
                   <FormLabel>Color</FormLabel>
                   <Select
-                    disabled={state.loading}
+                    disabled={loading}
                     onValueChange={field.onChange}
                     value={field.value}
                     defaultValue={field.value}
@@ -331,15 +302,9 @@ const CategoryForm: React.FC<ProductFormProps> = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {colors.map((item) => (
-                        <SelectItem key={item.id} value={item.id}>
-                          <div className="flex items-center space-x-4">
-                            {item.name}{" "}
-                            <div
-                              className="h-3 w-3 rounded-full border"
-                              style={{ backgroundColor: item.value }}
-                            />
-                          </div>
+                      {colors.map((color) => (
+                        <SelectItem key={color.id} value={color.id}>
+                          {color.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -356,8 +321,8 @@ const CategoryForm: React.FC<ProductFormProps> = ({
                   <FormControl>
                     <Checkbox
                       checked={field.value}
+                      // @ts-ignore
                       onCheckedChange={field.onChange}
-                      disabled={state.loading}
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
@@ -377,28 +342,27 @@ const CategoryForm: React.FC<ProductFormProps> = ({
                   <FormControl>
                     <Checkbox
                       checked={field.value}
+                      // @ts-ignore
                       onCheckedChange={field.onChange}
-                      disabled={state.loading}
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
                     <FormLabel>Archived</FormLabel>
                     <FormDescription>
-                      This product will not appear anywhere in the store
+                      This product will not appear anywhere in the store.
                     </FormDescription>
                   </div>
                 </FormItem>
               )}
             />
           </div>
-          <Button className="ml-auto" type="submit" disabled={state.loading}>
+          <Button disabled={loading} className="ml-auto" type="submit">
             {action}
           </Button>
         </form>
       </Form>
-      <Separator />
     </>
   );
 };
 
-export default CategoryForm;
+export default ProductForm;
