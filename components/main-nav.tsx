@@ -53,7 +53,10 @@ const MainNav = ({ className, ...rest }: React.HTMLAttributes<HTMLElement>) => {
 
   return (
     <nav
-      className={cn("flex items-center ml-4 space-x-4 lg:space-x-6", className)}
+      className={cn(
+        "hidden lg:flex items-center ml-4 space-x-4 lg:space-x-6",
+        className
+      )}
     >
       {routes.map((route) => (
         <Link

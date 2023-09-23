@@ -36,6 +36,7 @@ const formSchema = z.object({
   name: z.string().min(1),
   images: z.object({ url: z.string() }).array(),
   price: z.coerce.number().min(1),
+  stack: z.coerce.number().min(1),
   categoryId: z.string().min(1),
   colorId: z.string().min(1),
   sizeId: z.string().min(1),
@@ -82,6 +83,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
         name: "",
         images: [],
         price: 0,
+        stack: 1,
         categoryId: "",
         colorId: "",
         sizeId: "",
@@ -181,7 +183,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
               </FormItem>
             )}
           />
-          <div className="md:grid md:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-8">
+          <div className="grid md:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-8">
             <FormField
               control={form.control}
               name="name"
@@ -210,6 +212,24 @@ const ProductForm: React.FC<ProductFormProps> = ({
                       type="number"
                       disabled={loading}
                       placeholder="9.99"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="stack"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Stack</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      disabled={loading}
+                      placeholder="10"
                       {...field}
                     />
                   </FormControl>
