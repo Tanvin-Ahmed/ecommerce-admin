@@ -61,7 +61,7 @@ model Size {
   value String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  products Product[]
+  productToSize ProductToSize[]
 
   @@index([storeId])
 }
@@ -74,7 +74,7 @@ model Color {
   value String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  products Product[]
+  ProductToColor ProductToColor[]
 
   @@index([storeId])
 }
@@ -87,21 +87,43 @@ model Product {
   isArchived Boolean @default(false)
   images Image[]
   storeId String
-  stack Int @default(1)
+  stock Int @default(1)
   store Store @relation("StoreToProduct", fields: [storeId], references: [id])
   categoryId String
   category Category @relation("CategoryToProduct", fields: [categoryId], references: [id])
-  sizeId String
-  size Size @relation(fields: [sizeId], references: [id])
-  colorId String
-  color Color @relation(fields: [colorId], references: [id])
+  colors ProductToColor[]
+  sizes ProductToSize[]
   orderItems OrderItem[] @relation("ProductToOrderItem")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([storeId])
   @@index([categoryId])
+}
+
+model ProductToColor {
+  id        String   @id @default(uuid())
+  productId String
+  colorId   String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  color     Color    @relation(fields: [colorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
   @@index([colorId])
+}
+
+model ProductToSize {
+  id        String   @id @default(uuid())
+  productId String
+  sizeId    String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size      Size     @relation(fields: [sizeId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
   @@index([sizeId])
 }
 
@@ -136,6 +158,7 @@ model OrderItem {
   order Order @relation("OrderToOrderItem", fields: [orderId], references: [id])
   productId String
   product Product @relation("ProductToOrderItem", fields: [productId], references: [id])
+  pieces Int
 
   @@index([orderId])
   @@index([productId])

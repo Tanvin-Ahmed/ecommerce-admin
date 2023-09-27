@@ -31,15 +31,16 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Checkbox } from "../ui/checkbox";
+import Modal from "../ui/modal";
 
 const formSchema = z.object({
   name: z.string().min(1),
   images: z.object({ url: z.string() }).array(),
   price: z.coerce.number().min(1),
-  stack: z.coerce.number().min(1),
+  stock: z.coerce.number().min(1),
   categoryId: z.string().min(1),
-  colorId: z.string().min(1),
-  sizeId: z.string().min(1),
+  colorIds: z.array(z.string()),
+  sizeIds: z.array(z.string()),
   isFeatured: z.boolean().default(false).optional(),
   isArchived: z.boolean().default(false).optional(),
 });
@@ -68,6 +69,8 @@ const ProductForm: React.FC<ProductFormProps> = ({
 
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [colorOpen, setColorOpen] = useState(false);
+  const [sizeOpen, setSizeOpen] = useState(false);
 
   const title = initialData ? "Edit product" : "Create product";
   const description = initialData ? "Edit a product." : "Add a new product";
@@ -83,10 +86,10 @@ const ProductForm: React.FC<ProductFormProps> = ({
         name: "",
         images: [],
         price: 0,
-        stack: 1,
+        stock: 1,
         categoryId: "",
-        colorId: "",
-        sizeId: "",
+        colorIds: [],
+        sizeIds: [],
         isFeatured: false,
         isArchived: false,
       };
@@ -221,10 +224,10 @@ const ProductForm: React.FC<ProductFormProps> = ({
             />
             <FormField
               control={form.control}
-              name="stack"
+              name="stock"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Stack</FormLabel>
+                  <FormLabel>Stock</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -269,70 +272,127 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="sizeId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Size</FormLabel>
-                  <Select
-                    disabled={loading}
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue
-                          defaultValue={field.value}
-                          placeholder="Select a size"
-                        />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {sizes.map((size) => (
-                        <SelectItem key={size.id} value={size.id}>
-                          {size.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="colorId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Color</FormLabel>
-                  <Select
-                    disabled={loading}
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue
-                          defaultValue={field.value}
-                          placeholder="Select a color"
-                        />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {colors.map((color) => (
-                        <SelectItem key={color.id} value={color.id}>
-                          {color.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <FormItem>
+              <FormLabel>Size</FormLabel>
+              <FormControl>
+                <Input
+                  type="button"
+                  value={"Select size"}
+                  onClick={() => setSizeOpen(true)}
+                />
+              </FormControl>
+              <Modal
+                title="Size"
+                description="Select product's available sizes"
+                isOpen={sizeOpen}
+                onClose={() => setSizeOpen(false)}
+              >
+                <div className="flex items-center gap-4 flex-wrap">
+                  {sizes.map((size) => (
+                    <FormField
+                      key={size.id}
+                      control={form.control}
+                      name="sizeIds"
+                      render={({ field }) => {
+                        return (
+                          <FormItem
+                            key={size.id}
+                            className="flex flex-row items-start space-x-3 space-y-0"
+                          >
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(size.id)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange(
+                                        field?.value && field.value.length > 0
+                                          ? [...field.value, size.id]
+                                          : [size.id]
+                                      )
+                                    : field.onChange(
+                                        field.value?.filter(
+                                          (value) => value !== size.id
+                                        )
+                                      );
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal flex justify-center items-center gap-x-1">
+                              <div>{size.name}</div>
+                              <div>({size.value})</div>
+                            </FormLabel>
+                          </FormItem>
+                        );
+                      }}
+                    />
+                  ))}
+                </div>
+              </Modal>
+              <FormMessage />
+            </FormItem>
+
+            <FormItem>
+              <FormLabel>Color</FormLabel>
+              <FormControl>
+                <Input
+                  type="button"
+                  value={"Select color"}
+                  onClick={() => setColorOpen(true)}
+                />
+              </FormControl>
+              <Modal
+                title="Color"
+                description="Select product's available colors"
+                isOpen={colorOpen}
+                onClose={() => setColorOpen(false)}
+              >
+                <div className="flex items-center gap-4 flex-wrap">
+                  {colors.map((color) => (
+                    <FormField
+                      key={color.id}
+                      control={form.control}
+                      name="colorIds"
+                      render={({ field }) => {
+                        return (
+                          <FormItem
+                            key={color.id}
+                            className="flex flex-row items-start space-x-3 space-y-0"
+                          >
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(color.id)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange(
+                                        field?.value && field.value.length > 0
+                                          ? [...field.value, color.id]
+                                          : [color.id]
+                                      )
+                                    : field.onChange(
+                                        field.value?.filter(
+                                          (value) => value !== color.id
+                                        )
+                                      );
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal flex flex-row justify-center items-center gap-x-1">
+                              {color.name}
+                              <div
+                                key={color.value}
+                                className="h-4 w-4 rounded-full border"
+                                style={{ backgroundColor: color.value }}
+                              />
+                            </FormLabel>
+                          </FormItem>
+                        );
+                      }}
+                    />
+                  ))}
+                </div>
+              </Modal>
+              <FormMessage />
+            </FormItem>
             <FormField
               control={form.control}
               name="isFeatured"

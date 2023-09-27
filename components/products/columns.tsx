@@ -3,14 +3,26 @@
 import { ColumnDef } from "@tanstack/react-table";
 import CellAction from "./cell-action";
 
+interface ColorType {
+  id: string;
+  value: string;
+  name: string;
+}
+interface SizeType {
+  id: string;
+  value: string;
+  name: string;
+}
+
 export type ProductColumn = {
   id: string;
   name: string;
   isFeatured: boolean;
   isArchived: boolean;
   price: string;
-  color: string;
-  size: string;
+  stock: number;
+  colors: ColorType[];
+  sizes: SizeType[];
   category: string;
   createdAt: string;
 };
@@ -33,23 +45,34 @@ export const columns: ColumnDef<ProductColumn>[] = [
     header: "Price",
   },
   {
+    accessorKey: "stock",
+    header: "Stock",
+  },
+  {
     accessorKey: "category",
     header: "Category",
   },
   {
-    accessorKey: "size",
-    header: "Size",
+    accessorKey: "sizes",
+    header: "Available sizes",
+    cell: ({ row }) => (
+      <div className="break-words">
+        {row.original.sizes.map((size) => size.value).join(", ")}
+      </div>
+    ),
   },
   {
-    accessorKey: "color",
-    header: "Color",
+    accessorKey: "colors",
+    header: "Available colors",
     cell: ({ row }) => (
-      <div className="flex items-center gap-x-2">
-        {row.original.color}
-        <div
-          className="h-6 w-6 rounded-full border"
-          style={{ backgroundColor: row.original.color }}
-        />
+      <div className="flex flex-wrap justify-start items-center gap-3">
+        {row.original.colors.map((color) => (
+          <div
+            key={color.value}
+            className="h-6 w-6 rounded-full border"
+            style={{ backgroundColor: color.value }}
+          />
+        ))}
       </div>
     ),
   },

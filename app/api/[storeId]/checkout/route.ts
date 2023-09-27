@@ -1,43 +1,49 @@
-import prismaDB from "@/lib/prismadb";
-import { stripe } from "@/lib/stripe";
-import { NextResponse } from "next/server";
 import Stripe from "stripe";
+import { NextResponse } from "next/server";
+
+import { stripe } from "@/lib/stripe";
+import prismaDB from "@/lib/prismadb";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Credentials": "true",
 };
 
-export const OPTIONS = async () => {
+export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
-};
-
-interface bodyType {
-  productIds: string[];
 }
+interface InfoType {
+  productId: string;
+  count: number;
+}
+
 export const POST = async (
   req: Request,
   { params }: { params: { storeId: string } }
 ) => {
   try {
-    const { productIds } = await req.json();
+    const { productInfo } = await req.json();
 
-    if (!productIds || productIds.length === 0) {
+    if (!productInfo || !productInfo.length) {
       return new NextResponse("ProductId is required", { status: 400 });
     }
 
     const products = await prismaDB.product.findMany({
       where: {
-        id: { in: productIds },
+        id: { in: productInfo.map((info: InfoType) => info.productId) },
       },
     });
 
     const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
 
     products.forEach((product) => {
+      const item: InfoType = productInfo.find(
+        (info: InfoType) => info.productId === product.id
+      );
       line_items.push({
-        quantity: 1,
+        quantity: item.count,
         price_data: {
           currency: "USD",
           product_data: {
@@ -48,6 +54,8 @@ export const POST = async (
       });
     });
 
+    const productIds = productInfo.map((info: InfoType) => info.productId);
+
     const order = await prismaDB.order.create({
       data: {
         storeId: params.storeId,
@@ -57,6 +65,11 @@ export const POST = async (
             product: {
               connect: { id },
             },
+            pieces: (
+              productInfo.find(
+                (info: InfoType) => info.productId === id
+              ) as InfoType
+            ).count,
           })),
         },
       },
@@ -73,10 +86,16 @@ export const POST = async (
       cancel_url: `${process.env.FRONTEND_STORE_URL}/cart?canceled=1`,
       metadata: {
         orderId: order.id,
+        productInfo: JSON.stringify(productInfo),
       },
     });
 
-    return NextResponse.json({ url: session.url }, { headers: corsHeaders });
+    return NextResponse.json(
+      { url: session.url },
+      {
+        headers: corsHeaders,
+      }
+    );
   } catch (error) {
     return new NextResponse("Something went wrong", { status: 500 });
   }

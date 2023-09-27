@@ -19,8 +19,16 @@ export const GET = async (req: Request, { params }: { params: param }) => {
       include: {
         images: true,
         category: true,
-        size: true,
-        color: true,
+        sizes: {
+          include: {
+            size: true,
+          },
+        },
+        colors: {
+          include: {
+            color: true,
+          },
+        },
       },
     });
 
@@ -37,10 +45,11 @@ export const PATCH = async (req: Request, { params }: { params: param }) => {
     const {
       name,
       price,
+      stock,
       categoryId,
       images,
-      colorId,
-      sizeId,
+      colorIds,
+      sizeIds,
       isFeatured,
       isArchived,
     } = await req.json();
@@ -56,6 +65,9 @@ export const PATCH = async (req: Request, { params }: { params: param }) => {
     if (!name) {
       return new NextResponse("Name is required", { status: 400 });
     }
+    if (!stock) {
+      return new NextResponse("Stock is required", { status: 400 });
+    }
 
     if (!images || !images.length) {
       return new NextResponse("Images are required", { status: 400 });
@@ -69,11 +81,11 @@ export const PATCH = async (req: Request, { params }: { params: param }) => {
       return new NextResponse("Category id is required", { status: 400 });
     }
 
-    if (!colorId) {
+    if (!colorIds || !colorIds.length) {
       return new NextResponse("Color id is required", { status: 400 });
     }
 
-    if (!sizeId) {
+    if (!sizeIds || !sizeIds.length) {
       return new NextResponse("Size id is required", { status: 400 });
     }
 
@@ -95,9 +107,22 @@ export const PATCH = async (req: Request, { params }: { params: param }) => {
       data: {
         name,
         price,
+        stock,
         categoryId,
-        colorId,
-        sizeId,
+        colors: {
+          createMany: {
+            data: colorIds.map((colorId: string) => ({
+              colorId,
+            })),
+          },
+        },
+        sizes: {
+          createMany: {
+            data: sizeIds.map((sizeId: string) => ({
+              sizeId,
+            })),
+          },
+        },
         images: {
           deleteMany: {},
         },

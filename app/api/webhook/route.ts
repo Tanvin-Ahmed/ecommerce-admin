@@ -4,6 +4,11 @@ import { stripe } from "@/lib/stripe";
 import { NextResponse } from "next/server";
 import prismaDB from "@/lib/prismadb";
 
+interface ProductInfoType {
+  productId: string;
+  count: number;
+}
+
 export const POST = async (req: Request) => {
   try {
     const body = await req.text();
@@ -33,7 +38,7 @@ export const POST = async (req: Request) => {
       .join(", ");
 
     if (event.type === "checkout.session.completed") {
-      const order = await prismaDB.order.update({
+      await prismaDB.order.update({
         where: {
           id: session?.metadata?.orderId,
         },
@@ -47,18 +52,34 @@ export const POST = async (req: Request) => {
         },
       });
 
-      const productIds = order.orderItems.map((item) => item.productId);
+      const productInfo: string | undefined = session?.metadata?.productInfo;
+      if (productInfo) {
+        const infos: ProductInfoType[] = JSON.parse(productInfo);
+        for (const productInfo of infos) {
+          const { productId, count } = productInfo;
 
-      await prismaDB.product.updateMany({
-        where: {
-          id: {
-            in: productIds,
-          },
-        },
-        data: {
-          isArchived: true,
-        },
-      });
+          const currentProduct = await prismaDB.product.findUnique({
+            where: {
+              id: productId,
+            },
+          });
+
+          if (!currentProduct) {
+            continue;
+          }
+
+          const newStock = currentProduct.stock - count;
+          await prismaDB.product.update({
+            where: {
+              id: productId,
+            },
+            data: {
+              stock: newStock,
+              isArchived: newStock <= 0, // Set isArchived to true if stock is zero or negative
+            },
+          });
+        }
+      }
     }
 
     return new NextResponse(null, { status: 200 });
