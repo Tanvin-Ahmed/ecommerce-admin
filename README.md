@@ -1,6 +1,6 @@
 # ShopNest Seller Dashboard
 
-This is a multivendor e-commerce seller dashboard where seller can add new store, billboard, color, size and products. In this project stripe payment backend also implemented. To visit, click [here](https://shop-nest-ecommerce-nextjs.vercel.app/).
+This is a multivendor e-commerce seller dashboard where seller can add new store, billboard, color, size and products. In this project stripe payment backend also implemented. To visit, click [here](https://shopnest-admin-one.vercel.app/).
 
 ## Technologies
 
